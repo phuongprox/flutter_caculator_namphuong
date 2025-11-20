@@ -25,7 +25,6 @@ class CalculatorApp extends StatelessWidget {
   }
 }
 
-// Widget chính quản lý trạng thái của máy tính
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({super.key});
 
@@ -36,21 +35,22 @@ class CalculatorScreen extends StatefulWidget {
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String _expression = '';
   String _result = '0';
+  bool _isResultCalculated = false; // Biến trạng thái mới
 
   @override
   void initState() {
     super.initState();
-    _loadState(); // Tải trạng thái đã lưu khi widget được tạo
+    _loadState();
   }
 
-  // Hàm để lưu trạng thái
+  // --- Quản lý Trạng thái ---
+
   Future<void> _saveState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('expression', _expression);
     await prefs.setString('result', _result);
   }
 
-  // Hàm để tải trạng thái
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -59,127 +59,161 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     });
   }
 
-  void _buttonPressed(String text) {
-    setState(() {
-      if (text == 'C') {
-        _expression = '';
-        _result = '0';
-        _saveState(); // Lưu trạng thái sau khi xóa
-        return; // Kết thúc sớm để không lưu lại ở cuối hàm
-      } else if (text == '=') {
-        _calculate();
-      } else if (text == '( )') {
-        _handleParenthesis();
-      } else if (text == '+/-') {
-        // Logic đổi dấu
-        if (_result.startsWith('-')) {
-          _result = _result.substring(1);
-        } else if (_result != '0') {
-          _result = '-$_result';
-        }
-      } else if (_expression.endsWith('Lỗi')) {
-        // Nếu phép tính trước đó bị lỗi, bắt đầu biểu thức mới
-        _expression = text;
-      } else if (_expression == _result &&
-          !['+', '-', '×', '÷', '%'].contains(text)) {
-        _expression = text;
-      } else {
-        _expression += text;
-      }
-    });
-    _saveState(); // Lưu trạng thái sau mỗi lần nhấn nút
-  }
+  // --- Logic Tính Toán ---
 
   void _calculate() {
-    // Trả về 0 nếu k có biểu thức để tính
     if (_expression.isEmpty) {
+      _result = '0';
       return;
     }
+
+    String originalExpression =
+        _expression; // Lưu lại phép tính gốc ở hàng trên , hiển thị kết quả ở bên dưới
+
     try {
       String finalExpression = _expression;
       finalExpression = finalExpression.replaceAll('×', '*');
       finalExpression = finalExpression.replaceAll('÷', '/');
       finalExpression = finalExpression.replaceAll('%', '/100');
+
       Parser p = Parser();
       Expression exp = p.parse(finalExpression);
       ContextModel cm = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, cm);
-      setState(() {
-        // Nếu kết quả là số nguyên, hiển thị không có phần thập phân
-        if (eval == eval.toInt()) {
-          _result = eval.toInt().toString();
-        } else {
-          _result = eval.toString();
-        }
-        _expression = _result; // Cho phép tính toán tiếp
-        _saveState(); // Lưu trạng thái sau khi tính toán thành công
-      });
+
+      // Định dạng kết quả
+      if (eval == eval.toInt()) {
+        _result = eval.toInt().toString();
+      } else {
+        _result = eval.toString();
+      }
+
+      _expression = originalExpression;
+      _isResultCalculated = true;
     } catch (e) {
-      setState(() {
-        _saveState(); // Cũng lưu trạng thái lỗi
-        _result = 'Lỗi';
-      });
+      _result = 'Lỗi';
+      _expression = originalExpression; // Giữ lại phép tính gốc khi có lỗi
     }
   }
 
+  // Xử lý logic dấu ngoặc () nhận biết khi nào mở "(" và khi nào đóng ")"
   void _handleParenthesis() {
-    // Nếu biểu thức bị lỗi, bắt đầu lại với dấu ngoặc mở
-    if (_expression.endsWith('Lỗi')) {
+    if (_expression.endsWith('Lỗi') || _result == 'Lỗi') {
       _expression = '(';
+      _result = '0';
       return;
     }
-
     int openParenCount = '('.allMatches(_expression).length;
     int closeParenCount = ')'.allMatches(_expression).length;
-
-    if (_expression.isEmpty) {
+    String lastChar = _expression.isEmpty
+        ? ''
+        : _expression.substring(_expression.length - 1);
+    // 1. Thêm ngoặc mở '('
+    if (_expression.isEmpty || ['+', '-', '×', '÷', '('].contains(lastChar)) {
       _expression += '(';
-      return;
     }
-    String lastChar = _expression.substring(_expression.length - 1);
-    // Logic đóng mở dấu ngoặc ()
-    // Nếu ký tự cuối là số hoặc ')' VÀ số ngoặc mở > số ngoặc đóng
-    if (RegExp(r'[0-9)]').hasMatch(lastChar) &&
+    // 2. Thêm ngoặc đóng ')'
+    else if (RegExp(r'[0-9)]').hasMatch(lastChar) &&
         openParenCount > closeParenCount) {
       _expression += ')';
     }
-    // Điều kiện để thêm dấu ngoặc mở '('
-    // Nếu ký tự cuối là toán tử hoặc '('
-    else if (['+', '-', '×', '÷', '('].contains(lastChar)) {
-      _expression += '(';
-    } else if (RegExp(r'[0-9)]').hasMatch(lastChar)) {
-      // Tự động thêm phép nhân khi mở ngoặc sau một số hoặc ngoặc đóng
+    // 3. Tự động thêm phép nhân ngầm '×('
+    else if (RegExp(r'[0-9)]').hasMatch(lastChar)) {
       _expression += '×(';
     }
   }
 
+  // --- Xử lý Nút Bấm ---
+  void _buttonPressed(String text) {
+    setState(() {
+      // LOGIC RESET: Xử lý khi nhấn nút sau khi đã tính toán
+      if (_isResultCalculated) {
+        // Nếu nhấn số hoặc ngoặc, bắt đầu phép tính mới
+        if (RegExp(r'[0-9]').hasMatch(text) || text == '( )') {
+          _expression = text;
+          _result = '0';
+        }
+        // Nếu nhấn toán tử, tiếp tục phép tính với kết quả là số đầu tiên
+        else if (['+', '-', '×', '÷', '%'].contains(text)) {
+          _expression = _result + text;
+        }
+        _isResultCalculated = false; // Reset trạng thái tính toán
+      }
+      // Xử lý các nút chức năng đặc biệt
+      if (text == 'C') {
+        _expression = '';
+        _result = '0';
+        _isResultCalculated = false;
+      } else if (text == '=') {
+        _calculate();
+      } else if (text == '( )') {
+        _handleParenthesis();
+      } else if (text == '+/-') {
+        // Xử lý nút Đổi dấu +/-
+        if (_expression.startsWith('-')) {
+          _expression = _expression.substring(1);
+        } else if (_expression.isNotEmpty && _expression != '0') {
+          _expression = '-$_expression';
+        }
+        _result = _expression; // Cập nhật kết quả hiển thị theo biểu thức
+      } else if (_expression.endsWith('Lỗi') || _result == 'Lỗi') {
+        // Xử lý sau khi có lỗi
+        _expression = text;
+        _result = '0';
+      }
+      // Xử lý nối chuỗi thông thường
+      else {
+        // Nếu không phải là trạng thái tính toán (đã được xử lý ở trên), nối chuỗi
+        if (!_isResultCalculated) {
+          _expression += text;
+        }
+      }
+    });
+    _saveState();
+  }
+
+  // UI của máy tính
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: <Widget>[
+          // Khu vực hiển thị kết quả
           Expanded(
-            flex: 2, // Chia 2 phần cho khung kết quả
+            flex: 2,
             child: Container(
               color: Colors.black,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Biểu thức hiện tại (hàng trên)
                   Padding(
-                    padding: const EdgeInsets.all(12.0),
+                    padding: const EdgeInsets.only(
+                      right: 18.0,
+                      left: 18.0,
+                      top: 18.0,
+                    ),
                     child: Text(
                       _expression,
-                      style: const TextStyle(color: Colors.grey, fontSize: 24),
+                      style: const TextStyle(color: Colors.grey, fontSize: 28),
                       textAlign: TextAlign.end,
                     ),
                   ),
+                  // Kết quả (hàng dưới)
                   Padding(
-                    // Hiển thị kết quả
-                    padding: const EdgeInsets.all(12.0),
+                    padding: const EdgeInsets.only(
+                      right: 18.0,
+                      left: 18.0,
+                      bottom: 18.0,
+                    ),
                     child: Text(
                       _result,
-                      style: const TextStyle(color: Colors.white, fontSize: 60),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 60,
+                        fontWeight: FontWeight.w300,
+                      ),
                       textAlign: TextAlign.end,
                     ),
                   ),
@@ -187,10 +221,12 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               ),
             ),
           ),
+
+          // Khu vực nút bấm
           Expanded(
-            flex: 3, //Chia 3 phần cho khung nút bấm
+            flex: 3,
             child: Container(
-              color: Colors.black, // Đồng bộ màu nền với khung kết quả
+              color: Colors.black,
               child: Column(
                 children: [
                   _buildButtonRow(['C', '( )', '%', '÷']),
@@ -207,6 +243,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
+  // Hàm xây dựng một hàng nút bấm
   Widget _buildButtonRow(List<String> buttons) {
     // Tạo hàng nút bấm
     return Expanded(
@@ -229,7 +266,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   Color _getButtonColor(String text) {
-    // Xác định màu nút dựa trên ký tự
+    // Xác định màu nút dựa vào chức năng
     switch (text) {
       case 'C':
         return const Color(0xFF963E3E);
