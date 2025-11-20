@@ -20,8 +20,24 @@ Dự án này là một ứng dụng máy tính di động được phát triể
 
 | Giao diện chính |
 | :---: |
-| <img src="screenshot\monitor_main.png" alt="Ảnh chụp màn hình của ứng dụng máy tính với giao diện tối" width="300"/> |
-
+| <img src="screenshot\monitor_main.png" alt="Ảnh chụp màn hình của ứng dụng máy tính với giao diện tối" width="100"/> |
+| Phép cộng |
+| :---: |
+| <img src="screenshot\addition.png" width="100"/> |
+| Phép trừ |
+| :---: |
+| <img src="screenshot\subtraction.png" width="100"/> |
+| Phép nhân |
+| :---: |
+| <img src="screenshot\multiplication.png" width="100"/> |
+| Phép chia |
+| :---: |
+| <img src="screenshot\decimal_division.png" width="100"/> |
+| Các phép tính khác |
+| :---: |
+| <img src="screenshot\error.png" width="100"/> |
+| <img src="screenshot\negative_subtraction.png" width="100"/> |
+| <img src="screenshot\parentheses.png" width="100"/> |
 ## ⚙️ Hướng Dẫn Cách Chạy Dự Án
 
 Để khởi chạy dự án này trên máy tính của bạn, bạn cần cài đặt Flutter SDK.
