@@ -36,12 +36,13 @@ This project is a mobile calculator application developed using Flutter and Dart
 
 ---
 ## 📸 New Application Screenshots
+<div align="center">
 <img src="screenshot\New_basic.png" width="100"/>
 <img src="screenshot\New_scientific.png" width="100"/>
 <img src="screenshot\New_darkmode.png" width="100"/>
 <img src="screenshot\New_history.png" width="100"/>
 <img src="screenshot\New_setting.png" width="100"/>
-
+</div>
 ---
 ## ⚙️ How to Run the Project
 
