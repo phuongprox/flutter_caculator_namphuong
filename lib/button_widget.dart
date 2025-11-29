@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // Widget của button
 
 class ButtonWidget extends StatelessWidget {
   final String text;
