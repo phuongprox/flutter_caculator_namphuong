@@ -1,13 +1,11 @@
 import 'package:flutter_caculator_nguyennamphuong/models/angle_mode.dart';
-
-/// Model để lưu trữ các cài đặt của người dùng cho máy tính.
+/// Model lưu trữ các cài đặt của người dùng cho máy tính.
 final class CalculatorSettings {
   final int decimalPrecision;
   final AngleMode angleMode;
   final bool hapticFeedbackEnabled;
   final bool soundEffectsEnabled;
   final int historySize;
-
   /// Constructor với các thuộc tính bắt buộc.
   const CalculatorSettings({
     required this.decimalPrecision,
@@ -16,7 +14,6 @@ final class CalculatorSettings {
     required this.soundEffectsEnabled,
     required this.historySize,
   });
-
   /// Constructor mặc định cho các cài đặt ban đầu.
   factory CalculatorSettings.initial() {
     return const CalculatorSettings(
@@ -27,7 +24,6 @@ final class CalculatorSettings {
       historySize: 50,
     );
   }
-
   /// Chuyển đổi đối tượng thành một Map JSON để lưu trữ.
   Map<String, dynamic> toJson() {
     return {
@@ -38,7 +34,6 @@ final class CalculatorSettings {
       'historySize': historySize,
     };
   }
-
   /// Tạo một đối tượng CalculatorSettings từ một Map JSON.
   factory CalculatorSettings.fromJson(Map<String, dynamic> json) {
     return CalculatorSettings(
@@ -49,7 +44,6 @@ final class CalculatorSettings {
       historySize: json['historySize'] as int,
     );
   }
-
   CalculatorSettings copyWith({
     int? decimalPrecision,
     AngleMode? angleMode,
